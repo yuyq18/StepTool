@@ -32,9 +32,11 @@ TODO
 
 ### Data Construction
 
+With the step-grained rewards, construct the training data
+
 TODO
 
-Use the step-grained rewards to construct the training data in the required format, as shown in `data_train/${MODEL_TYPE}/step_grained_for_ppo_example.csv`
+Here we provide a training data example file  `data_train/${MODEL_TYPE}/step_grained_for_ppo_example.csv` for the following training. 
 
 ## 2. Step-grained Training with PPO
 
@@ -73,8 +75,8 @@ Modify the configuration file `config/${MODEL_TYPE}/StepTool_ppo.json` as needed
 
 ```bash
 bash scripts/steptool_train/train_toolllama.sh
-bash scripts/sft/train_qwen2.sh
-bash scripts/sft/train_llama3-1.sh
+bash scripts/steptool_train/train_qwen2.sh
+bash scripts/steptool_train/train_llama3-1.sh
 ```
 
 Example Command (from `scripts/steptool_train/train_toolllama.sh`):
@@ -82,7 +84,7 @@ Example Command (from `scripts/steptool_train/train_toolllama.sh`):
 ```bash
 export PYTHONPATH=./
 export TRAIN_PATH="data_train"
-export TRAIN_SET="step_grained_for_ppo"
+export TRAIN_SET="step_grained_for_ppo_example"
 export CUDA_VISIBLE_DEVICES="0,1,2,3"
 
 export MODEL_TYPE="toolllama"

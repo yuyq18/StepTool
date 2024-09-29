@@ -1,6 +1,6 @@
 export PYTHONPATH=./
 export TRAIN_PATH="data_train"
-export TRAIN_SET="step_grained_for_ppo"
+export TRAIN_SET="step_grained_for_ppo_example"
 export CUDA_VISIBLE_DEVICES="0,1,2,3"
 
 export MODEL_TYPE="qwen2"
