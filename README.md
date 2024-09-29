@@ -1,6 +1,6 @@
-# StepTool
+# Codes for StepTool
 
-## Environment Setup
+## 0. Environment Setup
 
 1. Create a new Conda environment:
 
@@ -22,26 +22,23 @@
 ```
 **Note**: Ensure that the version of GCC/G++ is >= 9.0.0.
 
-## Data Download
 
-1. Download the compressed dataset from this link:
 
-2. Uncompress the downloaded `data_train.zip` and put it into the .data_train/ directory
+## 1. Step-grained Data Construction
 
-```bash
-unzip data_train.zip
-```
+### Reward Shaping & Collection
 
-## SFT Training for Base Models
+TODO
 
-To train base models using supervised fine-tuning (SFT), run the provided scripts:
+### Data Construction
 
-```bash
-bash scripts/sft/train_qwen2.sh
-bash scripts/sft/train_llama3-1.sh
-```
+TODO
 
-## Step-grained Training with PPO
+Use the step-grained rewards to construct the training data in the required format, as shown in `data_train/${MODEL_TYPE}/step_grained_for_ppo_example.csv`
+
+## 2. Step-grained Training with PPO
+
+The step-grained training is implemented in `src/steptool/step_ppo.py` and `src/steptool/step_ppotrainer.py`.
 
 1. Configuration
 
@@ -76,11 +73,11 @@ Modify the configuration file `config/${MODEL_TYPE}/StepTool_ppo.json` as needed
 
 ```bash
 bash scripts/steptool_train/train_toolllama.sh
-bash scripts/steptool_train/train_qwen2.sh
-bash scripts/steptool_train/train_llama3-1.sh
+bash scripts/sft/train_qwen2.sh
+bash scripts/sft/train_llama3-1.sh
 ```
 
-Example command from `scripts/steptool_train/train_toolllama.sh`:
+Example Command (from `scripts/steptool_train/train_toolllama.sh`):
 
 ```bash
 export PYTHONPATH=./
@@ -101,6 +98,17 @@ python src/steptool/step_ppo.py \
     --max_response_len 1024 \
     --epochs 5
 ```
+
+
+**Note**, for `qwen2` and `llama3.1`, these models must undergo supervised fine-tuning (SFT) beforehand:
+
+```bash
+bash scripts/sft/train_qwen2.sh
+bash scripts/sft/train_llama3-1.sh
+```
+
+A sample training dataset for SFT is available in `data_train/${MODEL_TYPE}/gpt4_dfs_G123_for_sft_example.json`
+
 
 ## Evaluation on StableToolBench
 
@@ -192,11 +200,8 @@ bash scripts_eval/llama3-1/run_preference.sh
 ```
 
 
-## Experimental Results in the Paper
+## Main Experimental Results in the Paper
 
-You can download all the experimental results presented in our paper from this link: [TODO]
-
-Below is the main experimental results:
 
 | **BaseModel** | **Strategy** | **Method** | **I1 Ins.** | **I1 Cat.** | **I1 Tool** | **I2 Cat.** | **I2 Ins.** | **I3 Ins.** | **Average** |
 |---------------|--------------|------------|-------------|-------------|-------------|-------------|-------------|-------------|-------------|
