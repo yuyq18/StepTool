@@ -3,9 +3,9 @@ export TRAIN_PATH="data_train"
 export TRAIN_SET="step_grained_for_ppo"
 export CUDA_VISIBLE_DEVICES="0,1,2,3"
 
-export MODEL_TYPE="qwen2"
+export MODEL_TYPE="llama3-1"
 # load the base model after sft pretrain
-export MODEL_PATH="sft-ckpts/qwen2/checkpoint-3639"
+export MODEL_PATH="sft-ckpts/llama3-1/checkpoint-3600"
 
 python src/steptool/step_ppo.py \
     --model_path ${MODEL_PATH} \

@@ -1,6 +1,6 @@
 {
     "peft_kwargs": {
-        "r": 16,
+        "r": 8,
         "lora_alpha": 16,
         "bias": "none",
         "task_type": "CAUSAL_LM"

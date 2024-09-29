@@ -1,5 +1,6 @@
 wandb/
 data_eval/
 data_train/
+sft_ckpts/
 **/__pycache__/
 ckpts/
