@@ -24,7 +24,7 @@ IGNORE_TOKEN_ID = LabelSmoother.ignore_index
 
 @dataclass
 class ModelArguments:
-    model_name_or_path: Optional[str] = field(default="Qwen/Qwen2-7B")
+    model_name_or_path: Optional[str] = field(default="Qwen/Qwen-7B")
     template_id: Optional[str] = field(default=None)
 
 
@@ -57,19 +57,9 @@ class LoraArguments:
     lora_r: int = 8
     lora_alpha: int = 16
     lora_dropout: float = 0.05
-    # target_modules=
-    # ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
     # ['gate_proj', 'o_proj', 'k_proj', 'q_proj', 'up_proj', 'down_proj', 'v_proj']
     lora_target_modules: list[str] = field(
-        default_factory=lambda: [
-            "q_proj",
-            "k_proj",
-            "v_proj",
-            "o_proj",
-            # "up_proj",
-            # "gate_proj",
-            # "down_proj",
-        ]
+        default_factory=lambda: ['q_proj', 'v_proj']
     )
     # lora_target_modules = None
     lora_weight_path: str = ""
@@ -143,47 +133,53 @@ def preprocess(
     sources,
     tokenizer: transformers.PreTrainedTokenizer,
     max_len: int,
-    system_message: str = "You are a helpful assistant."
+    system_message: str = "You are a pirate chatbot who always responds in pirate speak!"
 ) -> dict:
-    
-    im_end_id = tokenizer.get_vocab()["<|im_end|>"]
-    nl_tokens = tokenizer('\n', add_special_tokens=False).input_ids
+
+    # im_start = tokenizer.im_start_id
+    # im_end = tokenizer.im_end_id
+
+    begin_of_text_id = tokenizer.get_vocab()["<|begin_of_text|>"]
+    start_header_id = tokenizer.get_vocab()["<|start_header_id|>"]
+    end_header_id = tokenizer.get_vocab()["<|end_header_id|>"]
+    eot_id = tokenizer.get_vocab()["<|eot_id|>"]
+    nl_tokens = tokenizer('\n\n', add_special_tokens=False).input_ids
+    _system = tokenizer('system', add_special_tokens=False).input_ids
+    _user = tokenizer('user', add_special_tokens=False).input_ids
     _assistant = tokenizer('assistant', add_special_tokens=False).input_ids
+    _function = tokenizer('function', add_special_tokens=False).input_ids
     source_max_len = 0
 
     # Apply prompt templates
     input_ids, targets = [], []
     for i, source in enumerate(sources):
         input_id, target = [], []
-        assert source[0]['from'] == 'system'
-        system = tokenizer("<|im_start|>system\n{}<|im_end|>\n".format(source[0]['value']),
-                        add_special_tokens=False).input_ids
-        source = source[1:]
+        if source[0]['from'] == 'system':
+            system = [begin_of_text_id] + [start_header_id] + _system + [end_header_id] + nl_tokens + tokenizer(source[0]['value'], add_special_tokens=False).input_ids + [eot_id]
+            source = source[1:]
+        else:
+            system = [begin_of_text_id] + [start_header_id] + _system + [end_header_id] + nl_tokens + tokenizer(system_message, add_special_tokens=False).input_ids + [eot_id]
         input_id += system
-        target += [IGNORE_TOKEN_ID] * len(system)
+        target += [IGNORE_TOKEN_ID] * len(input_id)
         assert len(input_id) == len(target)
         for j, sentence in enumerate(source):
             role = sentence["from"]
+            value = sentence["value"]
             if role == 'user':
-                _input_id = tokenizer(
-                    "<|im_start|>user\n{}<|im_end|>\n".format(sentence["value"]),
-                    add_special_tokens=False).input_ids
+                _input_id = [start_header_id] + _user + [end_header_id] + nl_tokens + tokenizer(value, add_special_tokens=False).input_ids + [
+                    eot_id]
                 _target = [IGNORE_TOKEN_ID] * len(_input_id)
             elif role == 'assistant':
-                _input_id = tokenizer(
-                    "<|im_start|>assistant\n{}<|im_end|>\n".format(sentence["value"]),
-                    add_special_tokens=False).input_ids
+                _input_id = [start_header_id] + _assistant + [end_header_id] + nl_tokens + tokenizer(value, add_special_tokens=False).input_ids + [
+                    eot_id]
                 if j == len(source) - 1:
-                    if sentence["value"][0] == "\n":
-                        sentence["value"] = sentence["value"][1:]
-                    _target = [IGNORE_TOKEN_ID] * len(tokenizer("<|im_start|>assistant\n", add_special_tokens=False).input_ids) + \
-                                tokenizer(sentence["value"], add_special_tokens=False).input_ids + [im_end_id] + nl_tokens
+                    _target = [IGNORE_TOKEN_ID] + [IGNORE_TOKEN_ID] * len(_assistant) + \
+                            [IGNORE_TOKEN_ID] + [IGNORE_TOKEN_ID] * len(nl_tokens) + tokenizer(value, add_special_tokens=False).input_ids + [eot_id]
                 else:
                     _target = [IGNORE_TOKEN_ID] * len(_input_id)
             elif role == 'function':
-                _input_id = tokenizer(
-                    "<|im_start|>function\n{}<|im_end|>\n".format(sentence["value"]),
-                    add_special_tokens=False).input_ids
+                _input_id = [start_header_id] + _function + [end_header_id] + nl_tokens + tokenizer(value, add_special_tokens=False).input_ids + [
+                    eot_id]
                 _target = [IGNORE_TOKEN_ID] * len(_input_id)
             else:
                 raise NotImplementedError
@@ -244,8 +240,7 @@ class LazySupervisedDataset(Dataset):
         self.max_len = max_len
 
         rank0_print("Formatting inputs...Skip in lazy mode")
-        rank0_print(tokenizer.decode(preprocess([raw_data[0]["conversations"]], tokenizer, max_len)['input_ids'][0]))
-        # assert False
+        # rank0_print(tokenizer.decode(preprocess([raw_data[0]["conversations"]], tokenizer, max_len)['input_ids'][0]))
         self.tokenizer = tokenizer
         self.raw_data = raw_data
         self.cached_data_dict = {}
@@ -477,9 +472,7 @@ def train():
             trainer.train()
     trainer.save_state()
 
-    safe_save_model_for_hf_trainer(
-        trainer=trainer, output_dir=training_args.output_dir, bias=lora_args.lora_bias
-    )
+    safe_save_model_for_hf_trainer(trainer=trainer, output_dir=training_args.output_dir, bias=lora_args.lora_bias)
 
 
 if __name__ == "__main__":
