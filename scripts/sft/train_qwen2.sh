@@ -3,6 +3,8 @@ export NCCL_IB_DISABLE=1
 export CUDA_VISIBLE_DEVICES=0,1,2,3
 export TRAIN_PATH="data_train"
 export TRAIN_SET="gpt4_dfs_G123_for_sft"
+
+export MODEL_PATH="Qwen/Qwen2-7B-Instruct"
 export MODEL_TYPE="qwen2"
 export OUTPUT_DIR="sft_ckpts"
 export WANDB_PROJECT="SFT-Qwen2"
@@ -16,7 +18,7 @@ torchrun \
     --master_port 6601 \
     src/sft/qwen2.py \
    --model_name_or_path ${MODEL_PATH} \
-    --data_path ${TRAIN_PATH}/${MODEL_TYPE}$/${TRAIN_SET}.csv \
+    --data_path ${TRAIN_PATH}/${MODEL_TYPE}/${TRAIN_SET}.json \
     --bf16 True \
     --output_dir ${OUTPUT_DIR}/${MODEL_TYPE} \
     --report_to "wandb" \
@@ -38,4 +40,4 @@ torchrun \
     --model_max_length 8192 \
     --gradient_checkpointing True \
     --lazy_preprocess False \
-    --deepspeed ds_configs/stage3-cosine.json
+    --deepspeed config/ds_configs/stage3-cosine.json

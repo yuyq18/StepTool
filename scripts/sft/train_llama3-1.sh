@@ -3,8 +3,9 @@ export NCCL_IB_DISABLE=1
 export CUDA_VISIBLE_DEVICES=0,1,2,3
 export TRAIN_PATH="data_train"
 export TRAIN_SET="gpt4_dfs_G123_for_sft"
+
+export MODEL_PATH="meta-llama/Meta-Llama-3.1-8B-Instruct"
 export MODEL_TYPE="llama3-1"
-export MODEL_PATH=""
 export OUTPUT_DIR="sft_ckpts"
 export WANDB_PROJECT="SFT-Llama3-1"
 export WANDB_RUN_NAME="sft_with_gpt4_paths"
@@ -17,7 +18,7 @@ torchrun \
     --master_port 6601 \
     src/sft/llama3-1.py \
     --model_name_or_path ${MODEL_PATH} \
-    --data_path ${TRAIN_PATH}/${MODEL_TYPE}$/${TRAIN_SET}.csv \
+    --data_path ${TRAIN_PATH}/${MODEL_TYPE}/${TRAIN_SET}.json \
     --bf16 True \
     --output_dir ${OUTPUT_DIR}/${MODEL_TYPE} \
     --report_to "wandb" \

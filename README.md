@@ -21,3 +21,28 @@
     pip install -r requirements.txt
 ```
 
+Please make sure the version of GCC/G++ >= 9.0.0.
+
+## Download the data
+
+1. Download the compressed dataset from 
+
+2. Uncompress the downloaded data_train.zip. The following command will directly extract data_train.zip into the .data_train/ directory
+
+```bash
+unzip data_train.zip
+```
+
+
+## SFT Training for base models
+
+1. key parameters
+
+`TRAIN_SET` and `MODEL_PATH`
+
+2. run scripts
+
+```bash
+bash scripts/sft/train_qwen2.sh
+bash scripts/sft/train_llama3-1.sh
+```
