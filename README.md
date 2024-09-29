@@ -24,14 +24,13 @@
 
 ## Data Download
 
-1. Download the compressed dataset from 
+1. Download the compressed dataset from this link:
 
 2. Uncompress the downloaded `data_train.zip` and put it into the .data_train/ directory
 
 ```bash
 unzip data_train.zip
 ```
-
 
 ## SFT Training for Base Models
 
@@ -41,56 +40,6 @@ To train base models using supervised fine-tuning (SFT), run the provided script
 bash scripts/sft/train_qwen2.sh
 bash scripts/sft/train_llama3-1.sh
 ```
-
-Example command from `scripts/sft/train_llama3-1.sh`
-
-```bash
-export NCCL_P2P_DISABLE=1
-export NCCL_IB_DISABLE=1
-export CUDA_VISIBLE_DEVICES=0,1,2,3
-export TRAIN_PATH="data_train"
-export TRAIN_SET="gpt4_dfs_G123_for_sft"
-
-export MODEL_PATH="meta-llama/Meta-Llama-3.1-8B-Instruct"
-export MODEL_TYPE="llama3-1"
-export OUTPUT_DIR="sft_ckpts"
-export WANDB_PROJECT="SFT-Llama3-1"
-export WANDB_RUN_NAME="sft_with_gpt4_paths"
-
-torchrun \
-    --nproc_per_node 4 \
-    --nnodes 1 \
-    --node_rank 0 \
-    --master_addr localhost \
-    --master_port 6601 \
-    src/sft/llama3-1.py \
-    --model_name_or_path ${MODEL_PATH} \
-    --data_path ${TRAIN_PATH}/${MODEL_TYPE}/${TRAIN_SET}.json \
-    --bf16 True \
-    --output_dir ${OUTPUT_DIR}/${MODEL_TYPE} \
-    --report_to "wandb" \
-    --run_name ${WANDB_RUN_NAME} \
-    --num_train_epochs 5 \
-    --per_device_train_batch_size 1 \
-    --per_device_eval_batch_size 1 \
-    --gradient_accumulation_steps 4 \
-    --eval_strategy "steps" \
-    --eval_steps 400 \
-    --save_strategy "steps" \
-    --save_steps 400 \
-    --save_total_limit 10 \
-    --learning_rate 2e-5 \
-    --weight_decay 0. \
-    --warmup_ratio 0.04 \
-    --lr_scheduler_type "cosine" \
-    --logging_steps 1 \
-    --model_max_length 8192 \
-    --gradient_checkpointing True \
-    --lazy_preprocess False \
-    --deepspeed config/ds_configs/stage3-cosine.json
-```
-
-
 
 ## Step-grained Training with PPO
 
@@ -155,11 +104,99 @@ python src/steptool/step_ppo.py \
 
 ## Evaluation on StableToolBench
 
-TODO
+### 1. Build the api server
 
-## Experimental Results in Paper
+To set up the API server, follow the [StableToolBench](https://github.com/THUNLP-MT/StableToolBench) instructions.
 
-You can download all the experimental results from this link
+First, download a cache from [HuggingFace](https://huggingface.co/datasets/stabletoolbench/Cache) or [Tsinghua Cloud](https://cloud.tsinghua.edu.cn/f/07ee752ad20b43ed9b0d/?dl=1). 
+
+After downloading, unzip the folder into the `stabletoolbench/server` folder and ensure the `server` folder contains `tool_response_cache` folder and `tools` folder. The resulting folder of `server` looks like:
+```
+├── /server/
+│  ├── /tools/
+│  │  └── ...
+│  ├── /tool_response_cache/
+│  │  └── ...
+│  ├── config.yml
+│  ├── main.py
+│  ├── utils.py
+```
+
+Next, specify your configurations in `server/config.yml`
+
+```
+api_key: 
+api_base: 
+model: gpt-4-turbo-preview
+temperature: 0
+toolbench_url: http://8.130.32.149:8080/rapidapi
+rapidapi_key: 
+tools_folder: "./tools"
+cache_folder: "./tool_response_cache"
+is_save: true
+port: 8081
+```
+
+To run the server:
+```
+cd server
+python main.py
+```
+The server will be run at `http://localhost:{port}/virtual`. 
+To use the server, you will further need a toolbench key. You can apply one from this [form](https://forms.gle/oCHHc8DQzhGfiT9r6).
+
+### 2. Run the model using vLLM
+
+We recommend setting up a new Conda environment for vLLM by following the [installation guide](https://docs.vllm.ai/en/latest/getting_started/installation.html)
+
+To build a vLLM server for the `ToolLLaMA-2-7b-v2` model, you can use the following command:
+```
+python -m vllm.entrypoints.openai.api_server --model ToolBench/ToolLLaMA-2-7b-v2 --served-model-name toolllama --max-model-len=8192 --dtype=bfloat16 --host 127.0.0.1 --port 8083 --rope-scaling '{"type": "linear", "factor": 2.0}'
+```
+
+**Note**: If you're using a LoRA version of the model, make sure to merge the LoRA weights with the base model before running it in vLLM.
+
+### 3. Run the Evaluation Scripts
+
+To evaluate the model on `StableToolBench`, first configure `stabletoolbench/config.yml`: 
+
+```
+api_key:
+api_base:
+toolbench_key:
+tool_root_dir: server/tools
+```
+
+Then, infer the model on the `solvable_test_queries` by running:
+
+```bash
+bash scripts_eval/toolllama/inference_toolllama_vllm.sh
+bash scripts_eval/qwen2/inference_qwen2_vllm.sh
+bash scripts_eval/llama3-1/inference_llama3-1_vllm.sh
+```
+
+Finally, evaluate the `pass_rate` and `win_rate` metrics:
+
+```bash
+bash scripts_eval/toolllama/run_convert_answer.sh
+bash scripts_eval/toolllama/run_pass_rate.sh
+bash scripts_eval/toolllama/run_preference.sh
+
+bash scripts_eval/qwen2/run_convert_answer.sh
+bash scripts_eval/qwen2/run_pass_rate.sh
+bash scripts_eval/qwen2/run_preference.sh
+
+bash scripts_eval/llama3-1/run_convert_answer.sh
+bash scripts_eval/llama3-1/run_pass_rate.sh
+bash scripts_eval/llama3-1/run_preference.sh
+```
+
+
+## Experimental Results in the Paper
+
+You can download all the experimental results presented in our paper from this link: [TODO]
+
+Below is the main experimental results:
 
 | **BaseModel** | **Strategy** | **Method** | **I1 Ins.** | **I1 Cat.** | **I1 Tool** | **I2 Cat.** | **I2 Ins.** | **I3 Ins.** | **Average** |
 |---------------|--------------|------------|-------------|-------------|-------------|-------------|-------------|-------------|-------------|

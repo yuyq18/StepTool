@@ -1,0 +1,72 @@
+evaluator_name: "tooleval_gpt-3.5-turbo_default"
+registered_cls_name: "ReinforceToolLearningEvaluator"
+prompt_template: "template.txt"
+fn_completions: "normalized_openai_completions"
+apis_json: "your/path/to/api_pool.json"
+completions_kwargs:
+  model: "gpt-3.5-turbo-16k"
+  max_tokens: 1000
+  temperature: 0
+  timeout: 10
+  functions:
+    - name: "evaluate_process_reward"
+      description: "Evaluate the entire task-solving process, including tool calls, the contribution of each intermediate step to the final answer, and the status of the final answer."
+      parameters:
+        type: "object"
+        properties:
+          succeed_tool_calling:
+            type: "array"
+            description: "Provide a binary score (0 or 1) indicating whether **each intermediate step** successfully called the tool."
+            items:
+                type: "number"
+                description: "0 for unsuccessful tool calls, 1 for successful tool calls"
+          contribution_to_final_answer:
+            type: "array"
+            description: "Provide a score (0 to 5) to assess how much **each intermediate step** contributed to the final answer."
+            items:
+                type: "number"
+                description: "0 indicates no contribution, and 5 indicates maximum contribution."
+          final_answer_status:
+            type: "string"
+            enum: ["Unsure", "Unsolved", "Solved"]
+            description: "Indicate the status of the final answer. Choose from: 'Unsure', 'Unsolved', or 'Solved'."
+        required: ["succeed_tool_calling", "contribution_to_final_answer", "final_answer_status"]
+    
+    - name: "check_answer_status"
+      description: "Parse the json answer with layerd nodes and return the answer_status about the answer"
+      parameters:
+        type: "object"
+        properties:
+          answer_status:
+            type: "string"
+            enum: ["Unsure","Unsolved","Solved"]
+        required: ["answer_status"]
+    - name: "parse_answer_status"
+      description: "Parse the json answer with layerd nodes and return the answer_status about the answer"
+      parameters:
+        type: "object"
+        properties:
+          answer_status:
+            type: "string"
+            enum: ["Unsure","Unsolved","Solved"]
+        required: ["answer_status"]
+    - name: "check_task_solvable"
+      description: "Parse the task description and return the task_status about the task"
+      parameters:
+        type: "object"
+        properties:
+          task_status:
+            type: "string"
+            enum: ["Unsure","Unsolvable","Solvable"]
+        required: ["task_status"]
+    - name: "select_better_answer"
+      description: "Select the better answer with a comprehensive investigation on given aspects. You should ignore the impact of the order of candidate answers."
+      parameters:
+        type: "object"
+        properties:
+          index:
+            type: "number"
+            description: "The `index` value in the selected better answer."
+        required: ["index"]
+fn_completion_parser: "index_parser"
+batch_size: 1
