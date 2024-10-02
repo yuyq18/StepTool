@@ -26,17 +26,26 @@
 
 ## 1. Step-grained Data Construction
 
-### Reward Shaping & Collection
+Step-grained rewards can be assigned using various methods, including automated rule-based systems, human annotations, or advanced models such as GPT-4.
 
-TODO
+Below is a reference prompt for GPT-4 to perform step-grained reward annotation:
+```
+Query:
+{query}
 
-### Data Construction
+Intermediate Steps:
+{mid_steps}
+Final Answer:
+{final_answer}
 
-With the step-grained rewards, construct the training data
+Given the above query, all intermediate steps and the final answer, you need to evaluate the entire task-solving process by following rules:
+(1) **Successful Tool Calling:** For each intermediate step, determine if a tool was called successfully and give a score of 0 (no) or 1 (yes).
+(2) **Contribution to Final Answer:** For each intermediate step, rate its contribution to the final answer on a scale from 0 to 5.
+(3) **Final Answer Status:** Determine if the final answer is 'Solved',  'Unsure', or 'Unsolved'.
 
-TODO
-
-Here we provide a training data example file  `data_train/${MODEL_TYPE}/step_grained_for_ppo_example.csv` for the following training. 
+Now provide your evaluation in JSON format with the parameters of 'succeed_tool_calling', 'contribution_to_final_answer' and 'final_answer_status'  to the function `evaluate_process_reward`.
+```
+Additionally, we provide a sample training data file, data_train/${MODEL_TYPE}/step_grained_for_ppo_example.csv, for use in the subsequent training phase. (The full training dataset will be uploaded later.)
 
 ## 2. Step-grained Training with PPO
 
