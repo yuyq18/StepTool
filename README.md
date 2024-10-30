@@ -45,7 +45,10 @@ Given the above query, all intermediate steps and the final answer, you need to 
 
 Now provide your evaluation in JSON format with the parameters of 'succeed_tool_calling', 'contribution_to_final_answer' and 'final_answer_status'  to the function `evaluate_process_reward`.
 ```
-Additionally, we provide a sample training data file, data_train/${MODEL_TYPE}/step_grained_for_ppo_example.csv, for use in the subsequent training phase. (The full training dataset will be uploaded later.)
+
+We provide a sample training data file, data_train/${MODEL_TYPE}/step_grained_for_ppo_example.csv, for use in the subsequent training phase. 
+
+The complete training dataset can be downloaded from [this Dropbox link](https://www.dropbox.com/scl/fo/faizqka89m4fbz0ukhwai/AEzVegNkK2sOfvUQQOj2uUQ?rlkey=425kosbbbeihewx61bujnop94&st=62zi4jea&dl=0).
 
 ## 2. Step-grained Training with PPO
 
