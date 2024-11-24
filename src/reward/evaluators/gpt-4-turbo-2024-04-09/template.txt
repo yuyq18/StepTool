@@ -1,0 +1,21 @@
+<function>
+<name>evaluate_process_reward</name>
+<description>
+Query:
+{query}
+
+Intermediate Steps:
+{mid_steps}
+
+Final Answer:
+{final_answer}
+
+Based on the query, intermediate steps, and final answer, evaluate the entire task-solving process using the following criteria:
+
+1. **Successful Tool Calling**: For each intermediate step, indicate whether a tool was successfully called, with a score of 0 (no) or 1 (yes).
+2. **Contribution to Final Answer**: Rate the contribution of each intermediate step to the final answer on a scale of 0 to 5.
+3. **Final Answer Status**: Determine the final answer status as 'Solved', 'Unsure', or 'Unsolved'.
+
+Please call the `evaluate_process_reward` function to return your evaluation.
+</description>
+</function>

@@ -55,7 +55,6 @@ class OpenaiPoolRequest:
         api_key = item['api_key']
         api_base = item.get('api_base', None)
         client = OpenAI(api_key=api_key,base_url=api_base)
-        breakpoint()
         response = client.chat.completions.create(messages=messages,**kwargs)
         return response
     
