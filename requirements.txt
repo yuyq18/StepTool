@@ -32,3 +32,4 @@ Flask-Cors==4.0.1
 backoff==2.2.1
 slowapi==0.1.9
 httpx==0.24.0
+omegaconf==2.3.0

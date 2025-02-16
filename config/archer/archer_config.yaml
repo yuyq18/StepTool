@@ -1,0 +1,43 @@
+defaults:
+  - default
+  - _self_
+
+# checkpoint
+checkpoint_path: null
+basemodel: 'toolllama'
+save_path: 'output/archer_baseline/'
+env_load_path: 'data_train/archer/'
+
+# model
+agent_type: "archer_toolllama"
+policy_lm: 'ToolBench/ToolLLaMA-2-7b-v2'
+max_new_tokens: 512
+use_bfloat16: True
+use_lora: True
+eos_str: '</s>'
+
+save_freq: 50
+eval_freq: 5
+
+capacity: 100000 #replay buffer size
+rollout_size: 16 #number of rollout trajectories for each update
+eval_size: 4 #number of trajectories for evaluation
+batch_size: 4
+iterations: 100 #total number of iterations
+epochs: 20 #number of epochs for the critic each iteration
+actor_epochs: 1 #number of epochs for the actor each iteration
+warmup_iter: 10 #number of iterations without updating the policy
+grad_accum_steps: 8
+do_sample: True
+temperature: 1.0
+critic_lr: 1e-5
+lm_lr: 2e-6
+env_idx: null #set to null if don't want to reset to a specific environment
+gamma: 0.95 #discount factor
+tau: 0.1 #soft update parameter
+max_grad_norm: 10.0
+
+# wandb logging
+use_wandb: True
+project_name: 'archer_baseline'
+run_name: 'toolllama_archer_iter100_epoch20_actor1'

@@ -1,4 +1,4 @@
-# StepTool with PPO
+# PPO (Final Reward)
 
 import json
 import time
@@ -13,10 +13,11 @@ from accelerate import Accelerator
 from datasets import load_dataset
 
 from trl import (
+    PPOTrainer,
     PPOConfig,
     AutoModelForCausalLMWithValueHead,
 )
-from step_ppotrainer import StepPPOTrainer
+
 import wandb
 import numpy as np
 import random
@@ -30,7 +31,7 @@ def set_seed(seed):
     torch.cuda.manual_seed_all(seed) # if you are using multi-GPU.
 
 
-class StepToolPPOTrain():
+class PPOTrain():
     @staticmethod
     def parse_args():
         parser = ArgumentParser()
@@ -38,7 +39,7 @@ class StepToolPPOTrain():
         parser.add_argument('--model_path', default="ToolBench/ToolLLaMA-2-7b-v2", type=str, help='Path to the model')
         parser.add_argument('--data_file', required=True, type=str, help='Path to the data file')
         parser.add_argument('--model_type', default="ToolLlama", type=str, help='Type of the model')
-        parser.add_argument('--epochs', default=5, type=int, help='Number of epochs to train')
+        parser.add_argument('--epochs', default=3, type=int, help='Number of epochs to train')
         parser.add_argument('--max_length', default=1024, type=int, help='Max length of the input')
         parser.add_argument('--max_context_len', default=4096, type=int, help='Max context length')
         parser.add_argument('--max_response_len', default=1200, type=int, help='Max response length')
@@ -53,7 +54,7 @@ class StepToolPPOTrain():
         self.max_length = args.max_length
         self.max_context_len = args.max_context_len
         self.max_response_len = args.max_response_len
-        wandb_project = "StepTool_PPO"
+        wandb_project = "baseline-PPO"
         wandb_run_name = f"{args.model_type}"
         wandb.init(project=wandb_project, name=wandb_run_name)
 
@@ -72,57 +73,35 @@ class StepToolPPOTrain():
             f"trainable params: {trainable_params} || all params: {all_param} || trainables%: {100 * trainable_params / all_param}"
         )
 
-    # Build step-grained input
     def formatting_func(self, examples):
-        input_text = eval(examples["prompt"])
-        response_text = eval(examples["response"])
-        query_ids_list = []
-        frag_mask_list = []
-        for in_text, res_text in zip(input_text[:-1], response_text[:-1]):  # build the step-grained frag_mask
-            in_text_ids = self.tokenizer.encode(in_text, return_tensors='pt').squeeze(0)
-            res_text_ids = self.tokenizer.encode(res_text, return_tensors='pt').squeeze(0)
-            frag_mask = torch.cat([torch.zeros_like(in_text_ids),torch.ones_like(res_text_ids)])
-            query_ids_list.append(in_text_ids)
-            query_ids_list.append(res_text_ids)
-            frag_mask_list.append(frag_mask)
-            
-        in_text_ids = self.tokenizer.encode(input_text[-1], return_tensors='pt').squeeze(0)
-        frag_mask = torch.zeros_like(in_text_ids)
-        query_ids_list.append(in_text_ids)
-        frag_mask_list.append(frag_mask)
+        input_text = examples["prompt"]
+        examples["query"] = self.tokenizer.encode(input_text, return_tensors='pt').squeeze(0)
 
-        examples["query"] = torch.cat(query_ids_list)
-        while len(examples["query"]) > self.max_context_len:
-            examples["query"] = examples["query"][-self.max_context_len:]
+        max_context_len = 4096
+        max_response_len = 1200
+        while len(examples["query"]) > max_context_len:
+            examples["query"] = examples["query"][-max_context_len:]
         
-        tmp_frag_mask = torch.cat(frag_mask_list)
-        if len(tmp_frag_mask) > self.max_context_len:
-            tmp_frag_mask = tmp_frag_mask[-self.max_context_len:]
 
-        examples['response'] = self.tokenizer.encode(response_text[-1], return_tensors='pt').squeeze(0)
-        if len(examples['response']) > self.max_response_len:
+        examples['response'] = self.tokenizer.encode(examples["response"], return_tensors='pt').squeeze(0)
+        if len(examples['response']) > max_response_len:
             examples['response'] = examples['response'][:self.max_response_len]
-        
-        examples['frag_mask'] = torch.cat([tmp_frag_mask, torch.ones_like(examples['response'])])
-        examples["label"] = torch.tensor(eval(examples["reward"]), dtype=torch.float16)
+        examples["label"] = torch.tensor(eval(examples["reward"])[-1], dtype=torch.float16)
         return examples
     
     def train(self, epochs: int = 1):
-        base_dir = os.path.join('ckpts/', f'steptool_{args.model_type}'+str(int(time.time())))
+        base_dir = os.path.join('ckpts/', f'baseline-ppo_'+str(int(time.time())))
 
         batch_steps = 0
-
         for epoch in range(epochs):
             print(f"==========================Epoch {epoch}==========================")
+ 
             for batch_id, batch in tqdm(enumerate(self.ppo_trainer.dataloader)):
                 batch_steps += 1
-                query_tensors_list, response_tensors_list = batch['query'], batch['response']
-                frag_mask_list = batch['frag_mask']
-                rewards_list = batch['label']
-                stats = self.ppo_trainer.step(query_tensors_list, response_tensors_list, rewards_list, frag_mask_list)
-                final_rewards_list = [rewards[-1] for rewards in rewards_list]
-                
-                self.ppo_trainer.log_stats(stats, batch, final_rewards_list, columns_to_log=[])
+                query_tensors, response_tensors = batch['query'], batch['response']
+                rewards = batch['label']
+                stats = self.ppo_trainer.step(query_tensors, response_tensors, rewards)
+                self.ppo_trainer.log_stats(stats, batch, rewards, columns_to_log=[])
 
                 if batch_steps % 100 == 0:
                     os.makedirs(base_dir, exist_ok=True)
@@ -133,7 +112,7 @@ class StepToolPPOTrain():
 
     def run(self):
         set_seed(2024)
-        
+
         with open(self.config_path, 'r') as config_f:
             config = json.load(config_f)
 
@@ -166,10 +145,9 @@ class StepToolPPOTrain():
 
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
-            self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
             model.config.pad_token_id = model.config.eos_token_id
         
-        self.ppo_trainer = StepPPOTrainer(
+        self.ppo_trainer = PPOTrainer(
             config=ppo_config,
             model=model,
             dataset=train_dataset,
@@ -181,6 +159,6 @@ class StepToolPPOTrain():
 
 
 if __name__ == "__main__":
-    args = StepToolPPOTrain.parse_args()
-    StepToolPPOTrain = StepToolPPOTrain(args)
-    StepToolPPOTrain.run()
+    args = PPOTrain.parse_args()
+    PPOTrain = PPOTrain(args)
+    PPOTrain.run()

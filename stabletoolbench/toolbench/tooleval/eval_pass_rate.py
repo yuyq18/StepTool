@@ -69,8 +69,8 @@ if __name__ == "__main__":
     for test_set in args.test_set:
         reference_path = f"{args.converted_answer_path}/{reference_model}/{test_set}.json"
         test_ids = list(json.load(open(os.path.join(args.test_ids, test_set+".json"), "r")).keys())
-        reference_examples = json.load(open(reference_path, "r"))
         if os.path.exists(f"{args.save_path}/{test_set}.json") and not args.overwrite:
+            print("Load existing results.")
             old_existed_ids = list(json.load(open(f"{args.save_path}/{test_set}.json", "r")).keys())
             old_label_cnt = json.load(open(f"{args.save_path}/{test_set}.json", "r"))
             
@@ -84,44 +84,45 @@ if __name__ == "__main__":
         else:
             existed_ids = []
             label_cnt = {}
-        
-        with ThreadPoolExecutor(args.max_eval_threads) as pool:
-            future = []
-            for query_id in reference_examples:
-                if str(query_id) not in test_ids:
-                    continue
-                if query_id in existed_ids:
-                    continue
-                for i in range(args.evaluate_times):
-                    example = reference_examples[query_id]
-                    future.append(pool.submit(
-                        compute_pass_rate,
-                        query_id,
-                        example,
-                        evaluate_time=i
-                    ))
+        if len(existed_ids) < len(test_ids):
+            reference_examples = json.load(open(reference_path, "r"))
+            with ThreadPoolExecutor(args.max_eval_threads) as pool:
+                future = []
+                for query_id in reference_examples:
+                    if str(query_id) not in test_ids:
+                        continue
+                    if query_id in existed_ids:
+                        continue
+                    for i in range(args.evaluate_times):
+                        example = reference_examples[query_id]
+                        future.append(pool.submit(
+                            compute_pass_rate,
+                            query_id,
+                            example,
+                            evaluate_time=i
+                        ))
 
-            for thd in tqdm(as_completed(future),total=len(future),ncols=100):
-                query_id, is_solved, evaluate_time = thd.result()
-                example = reference_examples[query_id]
-                query = example["query"]
-                tool_names = []
-                for tool_dict in example["available_tools"]:
-                    tool_name = tool_dict["function"]["name"]
-                    tool_names.append(tool_name)
-                answer_steps, answer_steps_list, final_step = get_steps(example)
-                if query_id not in label_cnt:
-                    label_cnt[query_id] = {}
-                label_cnt[query_id]["query"] = query
-                label_cnt[query_id]["tool_names"] = tool_names
-                label_cnt[query_id]["answer_steps"] = answer_steps
-                label_cnt[query_id]["final_step"] = final_step
-                if 'is_solved' not in label_cnt[query_id]:
-                    label_cnt[query_id]["is_solved"] = {}
-                label_cnt[query_id]["is_solved"][evaluate_time] = str(is_solved)
-                label_cnt[query_id]["length"] = len(answer_steps_list)
-                json.dump(label_cnt, open(f"{args.save_path}/{test_set}.json", "w"), ensure_ascii=False, indent=4)
-        json.dump(label_cnt, open(f"{args.save_path}/{test_set}.json", "w"), ensure_ascii=False, indent=4)
+                for thd in tqdm(as_completed(future),total=len(future),ncols=100):
+                    query_id, is_solved, evaluate_time = thd.result()
+                    example = reference_examples[query_id]
+                    query = example["query"]
+                    tool_names = []
+                    for tool_dict in example["available_tools"]:
+                        tool_name = tool_dict["function"]["name"]
+                        tool_names.append(tool_name)
+                    answer_steps, answer_steps_list, final_step = get_steps(example)
+                    if query_id not in label_cnt:
+                        label_cnt[query_id] = {}
+                    label_cnt[query_id]["query"] = query
+                    label_cnt[query_id]["tool_names"] = tool_names
+                    label_cnt[query_id]["answer_steps"] = answer_steps
+                    label_cnt[query_id]["final_step"] = final_step
+                    if 'is_solved' not in label_cnt[query_id]:
+                        label_cnt[query_id]["is_solved"] = {}
+                    label_cnt[query_id]["is_solved"][evaluate_time] = str(is_solved)
+                    label_cnt[query_id]["length"] = len(answer_steps_list)
+                    json.dump(label_cnt, open(f"{args.save_path}/{test_set}.json", "w"), ensure_ascii=False, indent=4)
+            json.dump(label_cnt, open(f"{args.save_path}/{test_set}.json", "w"), ensure_ascii=False, indent=4)
         
         filename = f"{args.save_path}/{test_set}.csv"
         write_results(filename, reference_model, label_cnt)
