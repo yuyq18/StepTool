@@ -2,6 +2,7 @@ wandb/
 sft_ckpts/
 **/__pycache__/
 ckpts/
-data_eval/
+data_eval/*
+!data_eval/pass_rate_results
 experimental_results/
 core*

@@ -1,9 +1,9 @@
 cd  stabletoolbench/toolbench/tooleval
 export API_POOL_FILE=../../openai_key.json
-export CONVERTED_ANSWER_PATH=../../data_eval/model_predictions_converted
-export SAVE_PATH=../../data_eval/pass_rate_results
+export CONVERTED_ANSWER_PATH=../../../data_eval/model_predictions_converted
+export SAVE_PATH=../../../data_eval/pass_rate_results
 mkdir -p ${SAVE_PATH}
-export CANDIDATE_MODEL="virtual_qwen2_dfs" # change it accordingly
+export CANDIDATE_MODEL="steptool_cot" # change it accordingly
 export EVAL_MODEL=gpt-4-turbo-2024-04-09
 mkdir -p ${SAVE_PATH}/${CANDIDATE_MODEL}
 

@@ -221,6 +221,10 @@ Then, infer the model on the `solvable_test_queries` by running:
 bash scripts_eval/toolllama/inference_toolllama_vllm.sh
 bash scripts_eval/qwen2/inference_qwen2_vllm.sh
 bash scripts_eval/llama3-1/inference_llama3-1_vllm.sh
+bash scripts_eval/baseline-rft/inference_rft_vllm.sh
+bash scripts_eval/baseline-ppo/inference_ppo_vllm.sh
+bash scripts_eval/baseline-eto/inference_eto_vllm.sh
+bash scripts_eval/baseline-archer/inference_archer_vllm.sh
 ```
 
 Finally, evaluate the `pass_rate` and `win_rate` metrics:
@@ -237,6 +241,18 @@ bash scripts_eval/qwen2/run_preference.sh
 bash scripts_eval/llama3-1/run_convert_answer.sh
 bash scripts_eval/llama3-1/run_pass_rate.sh
 bash scripts_eval/llama3-1/run_preference.sh
+
+bash scripts_eval/baseline-rft/run_convert_answer.sh
+bash scripts_eval/baseline-rft/run_pass_rate.sh
+
+bash scripts_eval/baseline-ppo/run_convert_answer.sh
+bash scripts_eval/baseline-ppo/run_pass_rate.sh
+
+bash scripts_eval/baseline-eto/run_convert_answer.sh
+bash scripts_eval/baseline-eto/run_pass_rate.sh
+
+bash scripts_eval/baseline-archer/run_convert_answer.sh
+bash scripts_eval/baseline-archer/run_pass_rate.sh
 ```
 
 ## Main Experimental Results in the Paper

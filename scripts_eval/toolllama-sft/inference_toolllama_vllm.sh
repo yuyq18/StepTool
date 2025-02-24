@@ -5,7 +5,7 @@ export SERVICE_URL="http://127.0.0.1:8081/virtual" # the address of api server
 export MODEL_PATH="toolllama"  # the name of vllm.server
 export STRATEGY="DFS_woFilter_w2"  # or CoT@1
 
-export OUTPUT_DIR="data_eval/answer/virtual_toolllama_dfs"  # change it accordingly
+export OUTPUT_DIR="data_eval/answer/toolllama_sft_dfs"  # change it accordingly
 
 group=G1_instruction  # G1_category, G1_tool, G2_category, G2_instruction, G3_instruction
 mkdir -p $OUTPUT_DIR; mkdir -p $OUTPUT_DIR/$group

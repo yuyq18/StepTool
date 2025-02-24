@@ -1,7 +1,7 @@
 cd stabletoolbench/toolbench/tooleval
-export RAW_ANSWER_PATH=../../data_eval/answer
-export CONVERTED_ANSWER_PATH=../../data_eval/model_predictions_converted
-export MODEL_NAME=virtual_toolllama_dfs # change it accordingly
+export RAW_ANSWER_PATH=../../../data_eval/answer
+export CONVERTED_ANSWER_PATH=../../../data_eval/model_predictions_converted
+export MODEL_NAME=steptool_dfs # change it accordingly
 export STRATEGY="DFS_woFilter_w2"  # or CoT@1
 export test_set=G1_instruction # G1_category, G1_tool, G2_category, G2_instruction, G3_instruction
 

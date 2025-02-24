@@ -1,4 +1,5 @@
 cd  stabletoolbench/toolbench/tooleval
+export API_POOL_FILE=../../openai_key.json
 export CONVERTED_ANSWER_PATH=../../data_eval/model_predictions_converted
 export SAVE_PATH=../../data_eval/pass_rate_results
 mkdir -p ${SAVE_PATH}
